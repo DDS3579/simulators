@@ -15,8 +15,6 @@ const ProjectileMotion = () => {
   const [range, setRange] = useState(0);
   const [flightTime, setFlightTime] = useState(0);
   const [trail, setTrail] = useState([]);
-  // const [calculationMode, setCalculationMode] = useState("forward"); // 'forward' or 'inverse'
-  // const [solveFor, setSolveFor] = useState("velocity"); // what to calculate
   const [calculationMode, setCalculationMode] = useState("forward");
   const [givenParameter, setGivenParameter] = useState("range"); // what user inputs
   const [solveFor, setSolveFor] = useState("velocity"); // what to calculate
