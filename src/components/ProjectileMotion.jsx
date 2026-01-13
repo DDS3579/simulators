@@ -110,30 +110,54 @@ const ProjectileMotion = () => {
       const cosA = Math.cos(angleRad);
       const sinA = Math.sin(angleRad);
 
-      let v = Math.sqrt((targetRange * g) / (Math.sin(2 * angleRad) || 1));
+      // For negative angles, we need to ensure proper calculation
+      let v = Math.sqrt(
+        Math.abs(targetRange * g) / (Math.abs(Math.sin(2 * angleRad)) || 0.1)
+      );
 
-      for (let i = 0; i < 10; i++) {
+      // Newton's method iterations
+      for (let i = 0; i < 20; i++) {
         const vx = v * cosA;
         const vy = v * sinA;
         const discriminant = vy * vy + 2 * g * launchHeight;
-        const tFlight = (vy + Math.sqrt(discriminant)) / g;
+
+        if (discriminant < 0) {
+          v += 1;
+          continue;
+        }
+
+        const sqrtDisc = Math.sqrt(discriminant);
+        const tFlight = (vy + sqrtDisc) / g;
+
+        // For negative angles, time might be shorter
+        if (tFlight <= 0) {
+          v += 1;
+          continue;
+        }
+
         const calculatedRange = vx * tFlight;
         const error = calculatedRange - targetRange;
 
         if (Math.abs(error) < 0.01) break;
 
+        // Derivative approximation
         const delta = 0.1;
         const vx2 = (v + delta) * cosA;
         const vy2 = (v + delta) * sinA;
         const discriminant2 = vy2 * vy2 + 2 * g * launchHeight;
-        const tFlight2 = (vy2 + Math.sqrt(discriminant2)) / g;
-        const calculatedRange2 = vx2 * tFlight2;
-        const derivative = (calculatedRange2 - calculatedRange) / delta;
 
-        if (Math.abs(derivative) > 0.01) {
-          v = v - error / derivative;
+        if (discriminant2 >= 0) {
+          const tFlight2 = (vy2 + Math.sqrt(discriminant2)) / g;
+          const calculatedRange2 = vx2 * tFlight2;
+          const derivative = (calculatedRange2 - calculatedRange) / delta;
+
+          if (Math.abs(derivative) > 0.01) {
+            v = v - error / derivative;
+          }
         }
-        if (v < 0) v = 1;
+
+        if (v < 0.1) v = 0.1;
+        if (v > 1000) break; // Prevent infinite growth
       }
 
       return Math.max(0, v);
@@ -147,16 +171,24 @@ const ProjectileMotion = () => {
     g
   ) => {
     if (projectileType === "horizontal") {
-      return 0; // Max height is just launch height for horizontal
+      return 0;
     }
+
     const angleRad = (launchAngle * Math.PI) / 180;
     const sinA = Math.sin(angleRad);
-    // h_max = h + vy²/(2g) => vy² = 2g(h_max - h)
-    // vy = v*sin(θ) => v = vy/sin(θ)
+
+    // For negative angles (diving), max height equals launch height
+    if (launchAngle < 0) {
+      // Can't have max height > launch height for diving projectile
+      if (targetMaxHeight > launchHeight) return 0;
+      return 0; // Not solvable for diving projectiles this way
+    }
+
+    // For positive angles: h_max = h + vy²/(2g)
     const vySquared = 2 * g * (targetMaxHeight - launchHeight);
     if (vySquared < 0) return 0;
     const vy = Math.sqrt(vySquared);
-    return vy / (sinA || 1);
+    return vy / (sinA || 0.01);
   };
 
   const solveForVelocityFromFlightTime = (
@@ -166,18 +198,26 @@ const ProjectileMotion = () => {
     g
   ) => {
     if (projectileType === "horizontal") {
-      // t = sqrt(2h/g) => h is fixed, so can't solve this way
       return 0;
     }
+
     const angleRad = (launchAngle * Math.PI) / 180;
     const sinA = Math.sin(angleRad);
+
     // t = (vy + sqrt(vy² + 2gh))/g where vy = v*sin(θ)
-    // Solving: v*sin(θ) = (g*t - sqrt((g*t)² - 8gh)) / 2
+    // For negative angles, vy is negative
+
+    // Rearranging: vy = (g*t ± sqrt((g*t)² - 8gh)) / 2
     const discriminant =
       g * targetTime * (g * targetTime) - 8 * g * launchHeight;
+
     if (discriminant < 0) return 0;
+
+    // For negative angles, use the minus sign
+    // For positive angles, use the minus sign (to get smaller positive vy)
     const vy = (g * targetTime - Math.sqrt(discriminant)) / 2;
-    return vy / (sinA || 1);
+
+    return Math.abs(vy) / (Math.abs(sinA) || 0.01);
   };
 
   // Solve for angle given different parameters
@@ -189,16 +229,25 @@ const ProjectileMotion = () => {
   ) => {
     if (projectileType === "horizontal") return 0;
 
-    let low = 0,
+    let low = -90,
       high = 90,
-      bestAngle = 45;
+      bestAngle = 0; // Start at 0 instead of 45
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 60; i++) {
+      // Increased iterations for better accuracy
       const mid = (low + high) / 2;
       const angleRad = (mid * Math.PI) / 180;
       const vx = launchVelocity * Math.cos(angleRad);
       const vy = launchVelocity * Math.sin(angleRad);
       const discriminant = vy * vy + 2 * g * launchHeight;
+
+      if (discriminant < 0) {
+        // Can't reach this with current parameters
+        if (mid < 0) low = mid;
+        else high = mid;
+        continue;
+      }
+
       const tFlight = (vy + Math.sqrt(discriminant)) / g;
       const calculatedRange = vx * tFlight;
 
@@ -207,8 +256,13 @@ const ProjectileMotion = () => {
         break;
       }
 
-      if (calculatedRange < targetRange) low = mid;
-      else high = mid;
+      if (calculatedRange < targetRange) {
+        if (mid < 0) high = mid; // For negative angles, increase angle
+        else low = mid;
+      } else {
+        if (mid < 0) low = mid;
+        else high = mid;
+      }
       bestAngle = mid;
     }
 
@@ -222,6 +276,14 @@ const ProjectileMotion = () => {
     g
   ) => {
     if (projectileType === "horizontal") return 0;
+
+    // For negative angles (diving), max height might be at launch
+    if (targetMaxHeight <= launchHeight) {
+      // Diving projectile - max height is at start
+      // This means we need negative angle
+      return -45; // Approximate, would need more complex solving
+    }
+
     // h_max = h + v²sin²(θ)/(2g)
     // sin²(θ) = 2g(h_max - h)/v²
     const sinSquared =
@@ -239,15 +301,21 @@ const ProjectileMotion = () => {
   ) => {
     if (projectileType === "horizontal") return 0;
 
-    let low = 0,
+    let low = -90,
       high = 90,
-      bestAngle = 45;
+      bestAngle = 45; // Changed from 0 to -90
 
     for (let i = 0; i < 50; i++) {
       const mid = (low + high) / 2;
       const angleRad = (mid * Math.PI) / 180;
       const vy = launchVelocity * Math.sin(angleRad);
       const discriminant = vy * vy + 2 * g * launchHeight;
+
+      if (discriminant < 0) {
+        high = mid;
+        continue;
+      }
+
       const tFlight = (vy + Math.sqrt(discriminant)) / g;
 
       if (Math.abs(tFlight - targetTime) < 0.01) {
@@ -309,9 +377,65 @@ const ProjectileMotion = () => {
     return (term * term - vy * vy) / (2 * g);
   };
 
+  const isMaxHeightValid = () => {
+    if (projectileType === "horizontal") return true;
+    if (solveFor === "angle") return true;
+    return angle >= 0;
+  };
+
+  const isLaunchHeightAsGivenValid = () => {
+    // Launch height as "given" only makes sense when:
+    // 1. We're NOT solving for height (obviously)
+    // 2. Angle is negative (diving projectile) - most useful here
+    if (solveFor === "height") return false;
+    return true; // Allow for all angles, but especially useful for negative
+  };
+
   // Main calculation dispatcher
   const performInverseCalculation = () => {
     const roundedInput = Math.round(inputValue * 100) / 100;
+
+    // Special handling when launch height is the given parameter
+    if (givenParameter === "launchHeight") {
+      if (solveFor === "height") {
+        alert(
+          "Error: Cannot calculate launch height when it is the given parameter!"
+        );
+        return;
+      }
+
+      // For launch height as given, we need another constraint (use range)
+      const currentRange = range || 100; // Use current calculated range or default
+
+      if (solveFor === "velocity") {
+        const calculatedV = solveForVelocityFromRange(
+          currentRange,
+          angle,
+          roundedInput,
+          gravity
+        );
+        setVelocity(Math.round(calculatedV * 10) / 10);
+        setHeight(roundedInput); // Update the height to the given value
+      } else if (solveFor === "angle" && projectileType === "angled") {
+        const calculatedAngle = solveForAngleFromRange(
+          currentRange,
+          velocity,
+          roundedInput,
+          gravity
+        );
+        setAngle(Math.round(calculatedAngle * 10) / 10);
+        setHeight(roundedInput);
+      }
+      return;
+    }
+
+    // Validation: Check if combination makes sense
+    if (givenParameter === "maxHeight" && angle < 0 && solveFor !== "angle") {
+      alert(
+        "Error: Cannot use Max Height as input for diving projectiles (negative angles). The maximum height is the launch height itself."
+      );
+      return;
+    }
 
     if (solveFor === "velocity") {
       let calculatedV = 0;
@@ -323,6 +447,12 @@ const ProjectileMotion = () => {
           gravity
         );
       } else if (givenParameter === "maxHeight") {
+        if (angle < 0) {
+          alert(
+            "Cannot calculate velocity from max height for diving projectiles."
+          );
+          return;
+        }
         calculatedV = solveForVelocityFromMaxHeight(
           roundedInput,
           angle,
@@ -348,6 +478,12 @@ const ProjectileMotion = () => {
           gravity
         );
       } else if (givenParameter === "maxHeight") {
+        if (roundedInput < height) {
+          alert(
+            "Max height less than launch height suggests a diving projectile. Please use Range or Flight Time instead."
+          );
+          return;
+        }
         calculatedAngle = solveForAngleFromMaxHeight(
           roundedInput,
           velocity,
@@ -373,6 +509,12 @@ const ProjectileMotion = () => {
           gravity
         );
       } else if (givenParameter === "maxHeight") {
+        if (angle < 0) {
+          alert(
+            "Cannot calculate launch height from max height for diving projectiles."
+          );
+          return;
+        }
         calculatedHeight = solveForHeightFromMaxHeight(
           roundedInput,
           velocity,
@@ -503,6 +645,26 @@ const ProjectileMotion = () => {
     return Math.max(0, h);
   };
 
+  const solveForVelocityFromLaunchHeight = (
+    givenHeight,
+    launchAngle,
+    targetRange,
+    g
+  ) => {
+    // When launch height is "given", we solve using the range
+    // This is essentially the same as solveForVelocityFromRange but with the given height
+    return solveForVelocityFromRange(targetRange, launchAngle, givenHeight, g);
+  };
+
+  const solveForAngleFromLaunchHeight = (
+    givenHeight,
+    launchVelocity,
+    targetRange,
+    g
+  ) => {
+    return solveForAngleFromRange(targetRange, launchVelocity, givenHeight, g);
+  };
+
   // Animation loop
   useEffect(() => {
     if (!isRunning) {
@@ -559,6 +721,35 @@ const ProjectileMotion = () => {
       setFlightTime(tFlight);
     }
   }, [velocity, angle, height, gravity, projectileType, calculationMode]);
+
+  // Add this new useEffect after the existing useEffects
+  useEffect(() => {
+    if (calculationMode === "inverse") {
+      // Auto-switch from maxHeight if it becomes invalid
+      if (givenParameter === "maxHeight" && !isMaxHeightValid()) {
+        setGivenParameter("range");
+        setInputValue(0);
+      }
+
+      // Auto-switch from launchHeight if we're solving for height
+      if (givenParameter === "launchHeight" && solveFor === "height") {
+        setGivenParameter("range");
+        setInputValue(0);
+      }
+
+      // Update input value when height changes and it's the given parameter
+      if (givenParameter === "launchHeight") {
+        setInputValue(height);
+      }
+    }
+  }, [
+    angle,
+    solveFor,
+    calculationMode,
+    givenParameter,
+    projectileType,
+    height,
+  ]);
 
   // Draw canvas
   useEffect(() => {
@@ -845,7 +1036,7 @@ const ProjectileMotion = () => {
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
                   {projectileType === "angled"
-                    ? "Launch at an angle with initial vertical velocity"
+                    ? "Launch at any angle (-90° to 90°). Use negative for diving projectiles"
                     : "Launch horizontally from a height (initial Vy = 0)"}
                 </p>
               </div>
@@ -896,16 +1087,47 @@ const ProjectileMotion = () => {
                       <select
                         value={givenParameter}
                         onChange={(e) => {
-                          setGivenParameter(e.target.value);
+                          const newValue = e.target.value;
+                          setGivenParameter(newValue);
+
+                          // Set initial input value based on selection
+                          if (newValue === "launchHeight") {
+                            setInputValue(height);
+                          } else {
+                            setInputValue(0);
+                          }
+
                           !isRunning && handleReset();
                         }}
                         disabled={isRunning}
                         className="w-full px-3 py-2 text-sm border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
                       >
                         <option value="range">Range (R)</option>
-                        <option value="maxHeight">Max Height (H_max)</option>
+                        {isMaxHeightValid() && (
+                          <option value="maxHeight">Max Height (H_max)</option>
+                        )}
                         <option value="flightTime">Flight Time (t)</option>
+                        {isLaunchHeightAsGivenValid() && (
+                          <option value="launchHeight">
+                            Launch Height (h)
+                          </option>
+                        )}
                       </select>
+
+                      {angle < 0 && givenParameter === "launchHeight" && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ Launch height is useful for diving projectile
+                          calculations
+                        </p>
+                      )}
+
+                      {!isMaxHeightValid() &&
+                        givenParameter === "maxHeight" && (
+                          <p className="text-xs text-red-600 mt-1">
+                            ⚠ Max height not valid for diving projectiles.
+                            Switching to Range.
+                          </p>
+                        )}
                     </div>
 
                     <div>
@@ -945,13 +1167,15 @@ const ProjectileMotion = () => {
                         }}
                         disabled={isRunning}
                         className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
-                        placeholder={`Enter ${
+                        placeholder={
                           givenParameter === "range"
-                            ? "range (m)"
+                            ? "Enter range (m)"
                             : givenParameter === "maxHeight"
-                            ? "max height (m)"
-                            : "flight time (s)"
-                        }`}
+                            ? "Enter max height (m) - only for upward launches"
+                            : givenParameter === "flightTime"
+                            ? "Enter flight time (s)"
+                            : "Enter launch height (m)"
+                        }
                       />
                     </div>
 
@@ -1014,34 +1238,77 @@ const ProjectileMotion = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Launch Angle: {angle}°
                   </label>
+
+                  {/* Improve range slider with better styling for negative values */}
+                  <div className="relative">
+                    <input
+                      type="range"
+                      min="-90"
+                      max="90"
+                      step="1"
+                      value={angle}
+                      onChange={(e) =>
+                        !isRunning && setAngle(Number(e.target.value))
+                      }
+                      disabled={
+                        isRunning ||
+                        (calculationMode === "inverse" && solveFor === "angle")
+                      }
+                      className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>-90°</span>
+                      <span>0°</span>
+                      <span>90°</span>
+                    </div>
+                  </div>
+
+                  {/* Better number input that handles negative signs properly */}
                   <input
-                    type="range"
-                    min="0"
-                    max="90"
+                    type="text"
                     value={angle}
-                    onChange={(e) =>
-                      !isRunning && setAngle(Number(e.target.value))
-                    }
-                    disabled={
-                      isRunning ||
-                      (calculationMode === "inverse" && solveFor === "angle")
-                    }
-                    className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    max="90"
-                    value={angle}
-                    onChange={(e) =>
-                      !isRunning && setAngle(Number(e.target.value))
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow typing negative sign, numbers, and empty string
+                      if (value === "" || value === "-") {
+                        // Temporarily allow these during typing
+                        return;
+                      }
+                      const numValue = parseFloat(value);
+                      if (
+                        !isNaN(numValue) &&
+                        numValue >= -90 &&
+                        numValue <= 90
+                      ) {
+                        !isRunning && setAngle(numValue);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // When user leaves the field, ensure valid number
+                      const value = e.target.value;
+                      if (value === "" || value === "-") {
+                        setAngle(0);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          setAngle(Math.max(-90, Math.min(90, numValue)));
+                        } else {
+                          setAngle(0);
+                        }
+                      }
+                    }}
                     disabled={
                       isRunning ||
                       (calculationMode === "inverse" && solveFor === "angle")
                     }
                     className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                    placeholder="Enter angle (-90 to 90)"
                   />
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Positive = upward launch, 0° = horizontal, Negative =
+                    diving/downward
+                  </p>
                 </div>
               )}
 
@@ -1052,6 +1319,10 @@ const ProjectileMotion = () => {
                   {projectileType === "horizontal" && (
                     <span className="text-red-600"> *</span>
                   )}
+                  {calculationMode === "inverse" &&
+                    givenParameter === "launchHeight" && (
+                      <span className="text-orange-600"> (Given)</span>
+                    )}
                 </label>
                 <input
                   type="range"
@@ -1063,7 +1334,9 @@ const ProjectileMotion = () => {
                   }
                   disabled={
                     isRunning ||
-                    (calculationMode === "inverse" && solveFor === "height")
+                    (calculationMode === "inverse" &&
+                      (solveFor === "height" ||
+                        givenParameter === "launchHeight"))
                   }
                   className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                 />
@@ -1077,7 +1350,9 @@ const ProjectileMotion = () => {
                   }
                   disabled={
                     isRunning ||
-                    (calculationMode === "inverse" && solveFor === "height")
+                    (calculationMode === "inverse" &&
+                      (solveFor === "height" ||
+                        givenParameter === "launchHeight"))
                   }
                   className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                 />
