@@ -15,6 +15,12 @@ const ProjectileMotion = () => {
   const [range, setRange] = useState(0);
   const [flightTime, setFlightTime] = useState(0);
   const [trail, setTrail] = useState([]);
+  // const [calculationMode, setCalculationMode] = useState("forward"); // 'forward' or 'inverse'
+  // const [solveFor, setSolveFor] = useState("velocity"); // what to calculate
+  const [calculationMode, setCalculationMode] = useState("forward");
+  const [givenParameter, setGivenParameter] = useState("range"); // what user inputs
+  const [solveFor, setSolveFor] = useState("velocity"); // what to calculate
+  const [inputValue, setInputValue] = useState(0); // the input value for inverse mode
 
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -88,6 +94,415 @@ const ProjectileMotion = () => {
     }
   };
 
+  // Solve for velocity given different parameters
+  const solveForVelocityFromRange = (
+    targetRange,
+    launchAngle,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") {
+      if (launchHeight <= 0) return 0;
+      const timeOfFlight = Math.sqrt((2 * launchHeight) / g);
+      return targetRange / timeOfFlight;
+    } else {
+      const angleRad = (launchAngle * Math.PI) / 180;
+      const cosA = Math.cos(angleRad);
+      const sinA = Math.sin(angleRad);
+
+      let v = Math.sqrt((targetRange * g) / (Math.sin(2 * angleRad) || 1));
+
+      for (let i = 0; i < 10; i++) {
+        const vx = v * cosA;
+        const vy = v * sinA;
+        const discriminant = vy * vy + 2 * g * launchHeight;
+        const tFlight = (vy + Math.sqrt(discriminant)) / g;
+        const calculatedRange = vx * tFlight;
+        const error = calculatedRange - targetRange;
+
+        if (Math.abs(error) < 0.01) break;
+
+        const delta = 0.1;
+        const vx2 = (v + delta) * cosA;
+        const vy2 = (v + delta) * sinA;
+        const discriminant2 = vy2 * vy2 + 2 * g * launchHeight;
+        const tFlight2 = (vy2 + Math.sqrt(discriminant2)) / g;
+        const calculatedRange2 = vx2 * tFlight2;
+        const derivative = (calculatedRange2 - calculatedRange) / delta;
+
+        if (Math.abs(derivative) > 0.01) {
+          v = v - error / derivative;
+        }
+        if (v < 0) v = 1;
+      }
+
+      return Math.max(0, v);
+    }
+  };
+
+  const solveForVelocityFromMaxHeight = (
+    targetMaxHeight,
+    launchAngle,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") {
+      return 0; // Max height is just launch height for horizontal
+    }
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const sinA = Math.sin(angleRad);
+    // h_max = h + vy²/(2g) => vy² = 2g(h_max - h)
+    // vy = v*sin(θ) => v = vy/sin(θ)
+    const vySquared = 2 * g * (targetMaxHeight - launchHeight);
+    if (vySquared < 0) return 0;
+    const vy = Math.sqrt(vySquared);
+    return vy / (sinA || 1);
+  };
+
+  const solveForVelocityFromFlightTime = (
+    targetTime,
+    launchAngle,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") {
+      // t = sqrt(2h/g) => h is fixed, so can't solve this way
+      return 0;
+    }
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const sinA = Math.sin(angleRad);
+    // t = (vy + sqrt(vy² + 2gh))/g where vy = v*sin(θ)
+    // Solving: v*sin(θ) = (g*t - sqrt((g*t)² - 8gh)) / 2
+    const discriminant =
+      g * targetTime * (g * targetTime) - 8 * g * launchHeight;
+    if (discriminant < 0) return 0;
+    const vy = (g * targetTime - Math.sqrt(discriminant)) / 2;
+    return vy / (sinA || 1);
+  };
+
+  // Solve for angle given different parameters
+  const solveForAngleFromRange = (
+    targetRange,
+    launchVelocity,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") return 0;
+
+    let low = 0,
+      high = 90,
+      bestAngle = 45;
+
+    for (let i = 0; i < 50; i++) {
+      const mid = (low + high) / 2;
+      const angleRad = (mid * Math.PI) / 180;
+      const vx = launchVelocity * Math.cos(angleRad);
+      const vy = launchVelocity * Math.sin(angleRad);
+      const discriminant = vy * vy + 2 * g * launchHeight;
+      const tFlight = (vy + Math.sqrt(discriminant)) / g;
+      const calculatedRange = vx * tFlight;
+
+      if (Math.abs(calculatedRange - targetRange) < 0.01) {
+        bestAngle = mid;
+        break;
+      }
+
+      if (calculatedRange < targetRange) low = mid;
+      else high = mid;
+      bestAngle = mid;
+    }
+
+    return bestAngle;
+  };
+
+  const solveForAngleFromMaxHeight = (
+    targetMaxHeight,
+    launchVelocity,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") return 0;
+    // h_max = h + v²sin²(θ)/(2g)
+    // sin²(θ) = 2g(h_max - h)/v²
+    const sinSquared =
+      (2 * g * (targetMaxHeight - launchHeight)) /
+      (launchVelocity * launchVelocity);
+    if (sinSquared < 0 || sinSquared > 1) return 0;
+    return (Math.asin(Math.sqrt(sinSquared)) * 180) / Math.PI;
+  };
+
+  const solveForAngleFromFlightTime = (
+    targetTime,
+    launchVelocity,
+    launchHeight,
+    g
+  ) => {
+    if (projectileType === "horizontal") return 0;
+
+    let low = 0,
+      high = 90,
+      bestAngle = 45;
+
+    for (let i = 0; i < 50; i++) {
+      const mid = (low + high) / 2;
+      const angleRad = (mid * Math.PI) / 180;
+      const vy = launchVelocity * Math.sin(angleRad);
+      const discriminant = vy * vy + 2 * g * launchHeight;
+      const tFlight = (vy + Math.sqrt(discriminant)) / g;
+
+      if (Math.abs(tFlight - targetTime) < 0.01) {
+        bestAngle = mid;
+        break;
+      }
+
+      if (tFlight < targetTime) low = mid;
+      else high = mid;
+      bestAngle = mid;
+    }
+
+    return bestAngle;
+  };
+
+  // Solve for height given different parameters
+  const solveForHeightFromRange = (
+    targetRange,
+    launchVelocity,
+    launchAngle,
+    g
+  ) => {
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const vx = launchVelocity * Math.cos(angleRad);
+    const vy = launchVelocity * Math.sin(angleRad);
+
+    const term1 = targetRange * g - vx * vy;
+    const h = (term1 * term1 - vx * vx * vy * vy) / (2 * g * vx * vx);
+
+    return Math.max(0, h);
+  };
+
+  const solveForHeightFromMaxHeight = (
+    targetMaxHeight,
+    launchVelocity,
+    launchAngle,
+    g
+  ) => {
+    if (projectileType === "horizontal") {
+      return targetMaxHeight; // Max height IS the launch height
+    }
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const vy = launchVelocity * Math.sin(angleRad);
+    // h_max = h + vy²/(2g) => h = h_max - vy²/(2g)
+    return targetMaxHeight - (vy * vy) / (2 * g);
+  };
+
+  const solveForHeightFromFlightTime = (
+    targetTime,
+    launchVelocity,
+    launchAngle,
+    g
+  ) => {
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const vy = launchVelocity * Math.sin(angleRad);
+    // t = (vy + sqrt(vy² + 2gh))/g
+    // Solving for h: h = ((g*t - vy)² - vy²)/(2g)
+    const term = g * targetTime - vy;
+    return (term * term - vy * vy) / (2 * g);
+  };
+
+  // Main calculation dispatcher
+  const performInverseCalculation = () => {
+    const roundedInput = Math.round(inputValue * 100) / 100;
+
+    if (solveFor === "velocity") {
+      let calculatedV = 0;
+      if (givenParameter === "range") {
+        calculatedV = solveForVelocityFromRange(
+          roundedInput,
+          angle,
+          height,
+          gravity
+        );
+      } else if (givenParameter === "maxHeight") {
+        calculatedV = solveForVelocityFromMaxHeight(
+          roundedInput,
+          angle,
+          height,
+          gravity
+        );
+      } else if (givenParameter === "flightTime") {
+        calculatedV = solveForVelocityFromFlightTime(
+          roundedInput,
+          angle,
+          height,
+          gravity
+        );
+      }
+      setVelocity(Math.round(calculatedV * 10) / 10);
+    } else if (solveFor === "angle" && projectileType === "angled") {
+      let calculatedAngle = 0;
+      if (givenParameter === "range") {
+        calculatedAngle = solveForAngleFromRange(
+          roundedInput,
+          velocity,
+          height,
+          gravity
+        );
+      } else if (givenParameter === "maxHeight") {
+        calculatedAngle = solveForAngleFromMaxHeight(
+          roundedInput,
+          velocity,
+          height,
+          gravity
+        );
+      } else if (givenParameter === "flightTime") {
+        calculatedAngle = solveForAngleFromFlightTime(
+          roundedInput,
+          velocity,
+          height,
+          gravity
+        );
+      }
+      setAngle(Math.round(calculatedAngle * 10) / 10);
+    } else if (solveFor === "height") {
+      let calculatedHeight = 0;
+      if (givenParameter === "range") {
+        calculatedHeight = solveForHeightFromRange(
+          roundedInput,
+          velocity,
+          angle,
+          gravity
+        );
+      } else if (givenParameter === "maxHeight") {
+        calculatedHeight = solveForHeightFromMaxHeight(
+          roundedInput,
+          velocity,
+          angle,
+          gravity
+        );
+      } else if (givenParameter === "flightTime") {
+        calculatedHeight = solveForHeightFromFlightTime(
+          roundedInput,
+          velocity,
+          angle,
+          gravity
+        );
+      }
+      setHeight(Math.round(calculatedHeight * 10) / 10);
+    }
+  };
+
+  // Solve for velocity given range, angle, height, and gravity
+  const solveForVelocity = (targetRange, launchAngle, launchHeight, g) => {
+    if (projectileType === "horizontal") {
+      // For horizontal: R = v * sqrt(2h/g)
+      // v = R / sqrt(2h/g)
+      if (launchHeight <= 0) return 0;
+      const timeOfFlight = Math.sqrt((2 * launchHeight) / g);
+      return targetRange / timeOfFlight;
+    } else {
+      // For angled: R = v²sin(2θ)/g + v*cos(θ)*sqrt(v²sin²(θ) + 2gh)/g
+      // This requires solving quadratic equation
+      const angleRad = (launchAngle * Math.PI) / 180;
+      const cosA = Math.cos(angleRad);
+      const sinA = Math.sin(angleRad);
+      const sin2A = Math.sin(2 * angleRad);
+
+      // Using simplified approach for the quadratic formula
+      // v² = (R * g) / (sin(2θ) + 2*cos²(θ)*sqrt(1 + 2gh/(R*sin(θ))²))
+      // Approximation: v² ≈ (R * g) / (sin(2θ))  for h = 0, then adjust
+
+      const a = sin2A / g;
+      const b = (2 * cosA * sinA) / g;
+      const c = -targetRange;
+
+      // Better approach: iterate to find v
+      let v = Math.sqrt((targetRange * g) / (sin2A || 1));
+
+      // Newton's method iterations
+      for (let i = 0; i < 10; i++) {
+        const vx = v * cosA;
+        const vy = v * sinA;
+        const discriminant = vy * vy + 2 * g * launchHeight;
+        const tFlight = (vy + Math.sqrt(discriminant)) / g;
+        const calculatedRange = vx * tFlight;
+        const error = calculatedRange - targetRange;
+
+        if (Math.abs(error) < 0.01) break;
+
+        // Derivative approximation
+        const delta = 0.1;
+        const vx2 = (v + delta) * cosA;
+        const vy2 = (v + delta) * sinA;
+        const discriminant2 = vy2 * vy2 + 2 * g * launchHeight;
+        const tFlight2 = (vy2 + Math.sqrt(discriminant2)) / g;
+        const calculatedRange2 = vx2 * tFlight2;
+        const derivative = (calculatedRange2 - calculatedRange) / delta;
+
+        if (Math.abs(derivative) > 0.01) {
+          v = v - error / derivative;
+        }
+
+        if (v < 0) v = 1;
+      }
+
+      return Math.max(0, v);
+    }
+  };
+
+  // Solve for angle given range, velocity, height, and gravity (angled launch only)
+  const solveForAngle = (targetRange, launchVelocity, launchHeight, g) => {
+    if (projectileType === "horizontal") return 0;
+
+    // Binary search for angle
+    let low = 0,
+      high = 90;
+    let bestAngle = 45;
+
+    for (let i = 0; i < 50; i++) {
+      const mid = (low + high) / 2;
+      const angleRad = (mid * Math.PI) / 180;
+      const vx = launchVelocity * Math.cos(angleRad);
+      const vy = launchVelocity * Math.sin(angleRad);
+      const discriminant = vy * vy + 2 * g * launchHeight;
+      const tFlight = (vy + Math.sqrt(discriminant)) / g;
+      const calculatedRange = vx * tFlight;
+
+      if (Math.abs(calculatedRange - targetRange) < 0.01) {
+        bestAngle = mid;
+        break;
+      }
+
+      if (calculatedRange < targetRange) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+      bestAngle = mid;
+    }
+
+    return bestAngle;
+  };
+
+  // Solve for height given range, velocity, angle, and gravity
+  const solveForHeight = (targetRange, launchVelocity, launchAngle, g) => {
+    const angleRad = (launchAngle * Math.PI) / 180;
+    const vx = launchVelocity * Math.cos(angleRad);
+    const vy = launchVelocity * Math.sin(angleRad);
+
+    // R = vx * ((vy + sqrt(vy² + 2gh)) / g)
+    // Solving for h:
+    // R*g = vx*vy + vx*sqrt(vy² + 2gh)
+    // R*g - vx*vy = vx*sqrt(vy² + 2gh)
+    // (R*g - vx*vy)² = vx²(vy² + 2gh)
+    // (R*g - vx*vy)² = vx²*vy² + 2*g*h*vx²
+    // h = ((R*g - vx*vy)² - vx²*vy²) / (2*g*vx²)
+
+    const term1 = targetRange * g - vx * vy;
+    const h = (term1 * term1 - vx * vx * vy * vy) / (2 * g * vx * vx);
+
+    return Math.max(0, h);
+  };
+
   // Animation loop
   useEffect(() => {
     if (!isRunning) {
@@ -139,11 +554,11 @@ const ProjectileMotion = () => {
   useEffect(() => {
     const { hMax, totalRange, tFlight } = calculateTrajectory();
     setMaxHeight(hMax);
-    if (!isRunning) {
+    if (!isRunning && calculationMode !== "inverse") {
       setRange(totalRange);
       setFlightTime(tFlight);
     }
-  }, [velocity, angle, height, gravity, projectileType]);
+  }, [velocity, angle, height, gravity, projectileType, calculationMode]);
 
   // Draw canvas
   useEffect(() => {
@@ -435,6 +850,126 @@ const ProjectileMotion = () => {
                 </p>
               </div>
 
+              {/* New Code start */}
+              {/* Calculation Mode Toggle */}
+              <div className="mb-5 pb-5 border-b border-gray-200">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Calculation Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <button
+                    onClick={() => {
+                      setCalculationMode("forward");
+                      !isRunning && handleReset();
+                    }}
+                    disabled={isRunning}
+                    className={`py-2 px-3 rounded-lg font-medium transition-colors ${
+                      calculationMode === "forward"
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    } disabled:opacity-50`}
+                  >
+                    Standard Mode
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCalculationMode("inverse");
+                      !isRunning && handleReset();
+                    }}
+                    disabled={isRunning}
+                    className={`py-2 px-3 rounded-lg font-medium transition-colors ${
+                      calculationMode === "inverse"
+                        ? "bg-orange-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    } disabled:opacity-50`}
+                  >
+                    Inverse Mode
+                  </button>
+                </div>
+
+                {calculationMode === "inverse" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-2">
+                        Given (Input):
+                      </label>
+                      <select
+                        value={givenParameter}
+                        onChange={(e) => {
+                          setGivenParameter(e.target.value);
+                          !isRunning && handleReset();
+                        }}
+                        disabled={isRunning}
+                        className="w-full px-3 py-2 text-sm border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                      >
+                        <option value="range">Range (R)</option>
+                        <option value="maxHeight">Max Height (H_max)</option>
+                        <option value="flightTime">Flight Time (t)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-2">
+                        Calculate (Solve for):
+                      </label>
+                      <select
+                        value={solveFor}
+                        onChange={(e) => {
+                          setSolveFor(e.target.value);
+                          !isRunning && handleReset();
+                        }}
+                        disabled={isRunning}
+                        className="w-full px-3 py-2 text-sm border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                      >
+                        <option value="velocity">Initial Velocity (v₀)</option>
+                        {projectileType === "angled" && (
+                          <option value="angle">Launch Angle (θ)</option>
+                        )}
+                        <option value="height">Launch Height (h)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-2">
+                        Input Value:
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(Number(e.target.value))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            performInverseCalculation();
+                          }
+                        }}
+                        disabled={isRunning}
+                        className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+                        placeholder={`Enter ${
+                          givenParameter === "range"
+                            ? "range (m)"
+                            : givenParameter === "maxHeight"
+                            ? "max height (m)"
+                            : "flight time (s)"
+                        }`}
+                      />
+                    </div>
+
+                    <p className="text-xs text-orange-600">
+                      Enter the{" "}
+                      {givenParameter === "range"
+                        ? "range"
+                        : givenParameter === "maxHeight"
+                        ? "max height"
+                        : "flight time"}{" "}
+                      value and press Enter or click Calculate below
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* New Code End */}
+
               {/* Initial Velocity */}
               <div className="mb-5">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -451,7 +986,10 @@ const ProjectileMotion = () => {
                   onChange={(e) =>
                     !isRunning && setVelocity(Number(e.target.value))
                   }
-                  disabled={isRunning}
+                  disabled={
+                    isRunning ||
+                    (calculationMode === "inverse" && solveFor === "velocity")
+                  }
                   className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                 />
                 <input
@@ -462,7 +1000,10 @@ const ProjectileMotion = () => {
                   onChange={(e) =>
                     !isRunning && setVelocity(Number(e.target.value))
                   }
-                  disabled={isRunning}
+                  disabled={
+                    isRunning ||
+                    (calculationMode === "inverse" && solveFor === "velocity")
+                  }
                   className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                 />
               </div>
@@ -481,7 +1022,10 @@ const ProjectileMotion = () => {
                     onChange={(e) =>
                       !isRunning && setAngle(Number(e.target.value))
                     }
-                    disabled={isRunning}
+                    disabled={
+                      isRunning ||
+                      (calculationMode === "inverse" && solveFor === "angle")
+                    }
                     className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                   />
                   <input
@@ -492,7 +1036,10 @@ const ProjectileMotion = () => {
                     onChange={(e) =>
                       !isRunning && setAngle(Number(e.target.value))
                     }
-                    disabled={isRunning}
+                    disabled={
+                      isRunning ||
+                      (calculationMode === "inverse" && solveFor === "angle")
+                    }
                     className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                   />
                 </div>
@@ -514,7 +1061,10 @@ const ProjectileMotion = () => {
                   onChange={(e) =>
                     !isRunning && setHeight(Number(e.target.value))
                   }
-                  disabled={isRunning}
+                  disabled={
+                    isRunning ||
+                    (calculationMode === "inverse" && solveFor === "height")
+                  }
                   className="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50"
                 />
                 <input
@@ -525,7 +1075,10 @@ const ProjectileMotion = () => {
                   onChange={(e) =>
                     !isRunning && setHeight(Number(e.target.value))
                   }
-                  disabled={isRunning}
+                  disabled={
+                    isRunning ||
+                    (calculationMode === "inverse" && solveFor === "height")
+                  }
                   className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                 />
                 {projectileType === "horizontal" && (
@@ -557,6 +1110,24 @@ const ProjectileMotion = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Calculate Button - Only show in inverse mode */}
+              {calculationMode === "inverse" && (
+                <div className="mb-5">
+                  <button
+                    onClick={performInverseCalculation}
+                    disabled={isRunning}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Calculate{" "}
+                    {solveFor === "velocity"
+                      ? "Velocity"
+                      : solveFor === "angle"
+                      ? "Angle"
+                      : "Height"}
+                  </button>
+                </div>
+              )}
 
               {/* Speed Control */}
               <div className="mb-5">
