@@ -210,20 +210,6 @@ const ProjectileMotion = () => {
       ctx.stroke();
     }
 
-    // for (let i = 0; i <= maxDistance; i += 10) {
-    //   ctx.beginPath();
-    //   ctx.moveTo(offsetX + i * scale, offsetY);
-    //   ctx.lineTo(offsetX + i * scale, 20);
-    //   ctx.stroke();
-    // }
-
-    // for (let i = 0; i <= maxHeightDisplay; i += 5) {
-    //   ctx.beginPath();
-    //   ctx.moveTo(offsetX, offsetY - i * scale);
-    //   ctx.lineTo(width - 20, offsetY - i * scale);
-    //   ctx.stroke();
-    // }
-
     // Draw ground
     ctx.strokeStyle = "#8b5cf6";
     ctx.lineWidth = 3;
@@ -364,7 +350,32 @@ const ProjectileMotion = () => {
     setFlightTime(tFlight);
   };
 
+  const handleCompleteSimulation = () => {
+    setIsRunning(false);
+    const { tFlight, totalRange } = calculateTrajectory();
+
+    // Set final position
+    setPosition({ x: totalRange, y: 0 });
+    setTime(tFlight);
+    setFlightTime(tFlight);
+    setRange(totalRange);
+
+    // Generate complete trail
+    const completeTrail = [];
+    for (let t = 0; t <= tFlight; t += tFlight / 50) {
+      const { x, y } = calculatePosition(t);
+      completeTrail.push({ x, y });
+    }
+    setTrail(completeTrail);
+
+    lastTimeRef.current = 0;
+  };
+
   const currentVelocity = calculatePosition(time);
+  const resultantVelocity = Math.sqrt(
+    currentVelocity.vx * currentVelocity.vx +
+      currentVelocity.vy * currentVelocity.vy
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
@@ -570,7 +581,7 @@ const ProjectileMotion = () => {
               </div>
 
               {/* Control Buttons */}
-              <div className="flex gap-2">
+              {/* <div className="flex gap-2">
                 <button
                   onClick={handleLaunch}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
@@ -583,6 +594,32 @@ const ProjectileMotion = () => {
                   className="bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center transition-colors"
                 >
                   <RotateCcw size={20} />
+                </button>
+              </div> */}
+
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleLaunch}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isRunning ? <Pause size={20} /> : <Play size={20} />}
+                    {isRunning ? "Pause" : "Launch"}
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    className="bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center transition-colors"
+                  >
+                    <RotateCcw size={20} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleCompleteSimulation}
+                  disabled={isRunning}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-3 rounded-lg font-semibold transition-colors disabled:cursor-not-allowed"
+                >
+                  Complete Simulation
                 </button>
               </div>
             </div>
@@ -600,7 +637,7 @@ const ProjectileMotion = () => {
             </div>
 
             {/* Live Calculations */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-lg p-4">
                 <div className="text-sm text-gray-600 mb-1">Time</div>
                 <div className="text-2xl font-bold text-indigo-900">
@@ -656,6 +693,15 @@ const ProjectileMotion = () => {
                 <div className="text-sm text-gray-600 mb-1">Vᵧ (Vertical)</div>
                 <div className="text-2xl font-bold text-red-900">
                   {currentVelocity.vy.toFixed(2)}m/s
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">
+                  Resultant Velocity
+                </div>
+                <div className="text-2xl font-bold text-indigo-900">
+                  {resultantVelocity.toFixed(2)}m/s
                 </div>
               </div>
             </div>
