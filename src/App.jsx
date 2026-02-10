@@ -1,16 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import ProjectileMotion  from './components/ProjectileMotion'
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import LandingPage from './pages/LandingPage';
+import ProjectileMotion from './pages/ProjectileMotion';
 
-function App() {
-
+function SimulatorLayout({ children }) {
   return (
     <>
-    <ProjectileMotion />
+      <Navbar />
+      <main className="pt-16">{children}</main>
+      <Footer />
     </>
-  )
+  );
 }
 
-export default App
+function HomeLayout({ children }) {
+  return (
+    <>
+      <Navbar />
+      <main>{children}</main>
+      <Footer />
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <HomeLayout>
+              <LandingPage />
+            </HomeLayout>
+          }
+        />
+        <Route
+          path="/simulators/projectile-motion"
+          element={
+            <SimulatorLayout>
+              <ProjectileMotion />
+            </SimulatorLayout>
+          }
+        />
+        {/* Add more simulator routes here */}
+      </Routes>
+    </Router>
+  );
+}
