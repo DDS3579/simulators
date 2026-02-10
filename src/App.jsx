@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import ProjectileMotion from './pages/ProjectileMotion';
+import About from './pages/About';
 
 function SimulatorLayout({ children }) {
   return (
@@ -34,6 +35,14 @@ export default function App() {
           element={
             <HomeLayout>
               <LandingPage />
+            </HomeLayout>
+          }
+        />
+                <Route
+          path="/about"
+          element={
+            <HomeLayout>
+              <About />
             </HomeLayout>
           }
         />
