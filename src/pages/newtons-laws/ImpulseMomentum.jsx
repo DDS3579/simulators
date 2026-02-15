@@ -316,7 +316,7 @@ const ImpulseMomentum = () => {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6">
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              to="/newtons-laws"
+              to="/simulators/newtons-laws"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} className="text-slate-600" />
@@ -334,21 +334,19 @@ const ImpulseMomentum = () => {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setMode('standard')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  mode === 'standard'
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${mode === 'standard'
                     ? 'bg-white shadow text-indigo-700'
                     : 'text-slate-500 hover:text-slate-700'
-                }`}
+                  }`}
               >
                 Standard
               </button>
               <button
                 onClick={() => setMode('eggdrop')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${
-                  mode === 'eggdrop'
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1 ${mode === 'eggdrop'
                     ? 'bg-white shadow text-amber-700'
                     : 'text-slate-500 hover:text-slate-700'
-                }`}
+                  }`}
               >
                 <Egg size={14} /> Egg Drop
               </button>
@@ -420,11 +418,10 @@ const ImpulseMomentum = () => {
                         setTimeout(() => canvasRef.current?.render(), 0);
                       }}
                       disabled={isRunning}
-                      className={`px-2 py-1 text-xs rounded-md border transition-all ${
-                        gravity === g.value
+                      className={`px-2 py-1 text-xs rounded-md border transition-all ${gravity === g.value
                           ? 'bg-indigo-600 text-white border-indigo-600'
                           : 'bg-white text-slate-600 border-gray-200 hover:border-indigo-300'
-                      } ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {g.label}
                     </button>

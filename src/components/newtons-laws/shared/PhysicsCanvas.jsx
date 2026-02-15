@@ -79,7 +79,7 @@ import {
   useEffect,
 } from 'react';
 import PropTypes from 'prop-types';
-import { useCanvasSetup } from '../../hooks/newtons-laws/useCanvasSetup';
+import { useCanvasSetup } from '../../../hooks/newtons-laws/useCanvasSetup.js';
 
 // ─── Color Constants ──────────────────────────────────────────────
 const CANVAS_BG = '#fafbff';

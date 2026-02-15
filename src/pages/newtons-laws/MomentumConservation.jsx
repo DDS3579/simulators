@@ -80,8 +80,8 @@ const MomentumConservation = () => {
       collisionType === 'elastic'
         ? 1
         : collisionType === 'inelastic'
-        ? 0
-        : restitution;
+          ? 0
+          : restitution;
 
     return calculateCollision({ m1, m2, u1, u2, restitution: e });
   }, [m1, m2, u1, u2, collisionType, restitution, explosionEnergy]);
@@ -369,7 +369,7 @@ const MomentumConservation = () => {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-3">
             <Link
-              to="/newtons-laws"
+              to="/simulators/newtons-laws"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} className="text-slate-600" />

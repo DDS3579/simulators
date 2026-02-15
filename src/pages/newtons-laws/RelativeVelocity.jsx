@@ -488,7 +488,7 @@ const RelativeVelocity = () => {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-3">
             <Link
-              to="/newtons-laws"
+              to="/simulators/newtons-laws"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} className="text-slate-600" />
@@ -517,11 +517,10 @@ const RelativeVelocity = () => {
                     key={m.id}
                     onClick={() => setMode(m.id)}
                     disabled={isRunning}
-                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg border-2 text-xs font-semibold transition-all ${
-                      mode === m.id
+                    className={`flex-1 flex items-center justify-center gap-1 p-2 rounded-lg border-2 text-xs font-semibold transition-all ${mode === m.id
                         ? 'bg-indigo-600 text-white border-indigo-600'
                         : 'bg-white text-slate-600 border-gray-200 hover:border-indigo-300'
-                    } ${isRunning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      } ${isRunning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   >
                     {m.icon}
                     <span>{m.label}</span>

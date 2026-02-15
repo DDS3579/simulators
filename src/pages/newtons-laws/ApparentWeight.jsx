@@ -550,7 +550,7 @@ const ApparentWeight = () => {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6">
           <div className="flex items-center gap-3">
             <Link
-              to="/newtons-laws"
+              to="/simulators/newtons-laws"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft size={20} className="text-slate-600" />
@@ -605,11 +605,10 @@ const ApparentWeight = () => {
                       key={g.value}
                       onClick={() => setGravity(g.value)}
                       disabled={isRunning}
-                      className={`px-2 py-1 text-xs rounded-md border transition-all ${
-                        gravity === g.value
+                      className={`px-2 py-1 text-xs rounded-md border transition-all ${gravity === g.value
                           ? 'bg-indigo-600 text-white border-indigo-600'
                           : 'bg-white text-slate-600 border-gray-200 hover:border-indigo-300'
-                      } ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       {g.label}
                     </button>
