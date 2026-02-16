@@ -617,7 +617,7 @@ const allSimulators = [
   { id: 'waves', title: 'Wave Motion', desc: 'Transverse, longitudinal, interference', icon: '🌊', subject: 'Physics', path: '/simulators/waves', live: false, chapter: 'Waves' },
   { id: 'newton', title: "Newton's Laws", desc: 'Force diagrams, friction, inclined planes', icon: '🍎', subject: 'Physics', path: '/simulators/newtons-laws', live: false, chapter: 'Mechanics' },
   { id: 'circular', title: 'Circular Motion', desc: 'Centripetal force, angular velocity', icon: '🔄', subject: 'Physics', path: '/simulators/circular-motion', live: false, chapter: 'Mechanics' },
-  { id: 'molecular', title: 'Molecular Viewer', desc: '3D structures, bond angles, geometry', icon: '🧬', subject: 'Chemistry', path: '/simulators/molecular-viewer', live: false, chapter: 'Chemical Bonding' },
+  { id: 'molecular', title: 'Molecular Viewer', desc: '3D structures, bond angles, geometry', icon: '🧬', subject: 'Chemistry', path: '/simulators/molecular-viewer', live: true, chapter: 'Chemical Bonding' },
   { id: 'periodic', title: 'Periodic Table', desc: 'Electron config, trends, properties', icon: '📊', subject: 'Chemistry', path: '/simulators/periodic-table', live: false, chapter: 'Classification' },
   { id: 'gaslaw', title: 'Gas Laws', desc: "Boyle's, Charles's, ideal gas", icon: '💨', subject: 'Chemistry', path: '/simulators/gas-laws', live: false, chapter: 'States of Matter' },
   { id: 'bonding', title: 'Chemical Bonding', desc: 'Ionic, covalent, metallic bonds', icon: '🔗', subject: 'Chemistry', path: '/simulators/bonding', live: false, chapter: 'Chemical Bonding' },
@@ -653,18 +653,16 @@ function SimCard({ sim, index }) {
     >
       <Link to={sim.live ? sim.path : '#'} onClick={(e) => !sim.live && e.preventDefault()}
         className={`block h-full ${!sim.live ? 'cursor-default' : ''}`}>
-        <div className={`h-full rounded-2xl border transition-all duration-300 overflow-hidden ${
-          sim.live
-            ? 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/8 group'
-            : 'bg-gray-50/80 border-gray-100'
-        }`}>
+        <div className={`h-full rounded-2xl border transition-all duration-300 overflow-hidden ${sim.live
+          ? 'bg-white border-gray-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/8 group'
+          : 'bg-gray-50/80 border-gray-100'
+          }`}>
           <div className="p-5">
             <div className="flex items-start justify-between mb-3">
               <span className="text-3xl">{sim.icon}</span>
               <div className="flex flex-col items-end gap-1">
-                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                  sim.subject === 'Physics' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
-                }`}>{sim.subject}</span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${sim.subject === 'Physics' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                  }`}>{sim.subject}</span>
                 {sim.live && (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live
@@ -672,9 +670,8 @@ function SimCard({ sim, index }) {
                 )}
               </div>
             </div>
-            <h3 className={`font-bold text-base mb-1 transition-colors ${
-              sim.live ? 'text-gray-900 group-hover:text-indigo-700' : 'text-gray-400'
-            }`}>{sim.title}</h3>
+            <h3 className={`font-bold text-base mb-1 transition-colors ${sim.live ? 'text-gray-900 group-hover:text-indigo-700' : 'text-gray-400'
+              }`}>{sim.title}</h3>
             <p className={`text-sm leading-relaxed ${sim.live ? 'text-gray-500' : 'text-gray-300'}`}>{sim.desc}</p>
             <p className={`text-[11px] mt-2 ${sim.live ? 'text-gray-400' : 'text-gray-300'}`}>Ch: {sim.chapter}</p>
             {sim.live && (
@@ -900,11 +897,10 @@ export default function LandingPage() {
               <div className="flex gap-2">
                 {['All', 'Physics', 'Chemistry'].map((f) => (
                   <button key={f} onClick={() => setActiveFilter(f)}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                      activeFilter === f
-                        ? 'bg-gray-900 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    }`}>
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${activeFilter === f
+                      ? 'bg-gray-900 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}>
                     {f === 'Physics' && '⚡ '}
                     {f === 'Chemistry' && '🧪 '}
                     {f}
@@ -933,18 +929,16 @@ export default function LandingPage() {
                   <Link to={sim.live ? sim.path : '#'}
                     onClick={(e) => !sim.live && e.preventDefault()}
                     className={`block h-full ${!sim.live ? 'cursor-default' : ''}`}>
-                    <div className={`h-full rounded-xl border transition-all duration-300 ${
-                      sim.live
-                        ? 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 group'
-                        : 'bg-gray-50/60 border-gray-100'
-                    }`}>
+                    <div className={`h-full rounded-xl border transition-all duration-300 ${sim.live
+                      ? 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 group'
+                      : 'bg-gray-50/60 border-gray-100'
+                      }`}>
                       <div className="p-5">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-2xl">{sim.icon}</span>
                           <div className="flex items-center gap-2">
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                              sim.subject === 'Physics' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
-                            }`}>{sim.subject}</span>
+                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${sim.subject === 'Physics' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
+                              }`}>{sim.subject}</span>
                             {sim.live ? (
                               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             ) : (
@@ -952,12 +946,10 @@ export default function LandingPage() {
                             )}
                           </div>
                         </div>
-                        <h3 className={`font-bold text-sm mb-1 transition-colors ${
-                          sim.live ? 'text-gray-900 group-hover:text-indigo-700' : 'text-gray-400'
-                        }`}>{sim.title}</h3>
-                        <p className={`text-xs leading-relaxed ${
-                          sim.live ? 'text-gray-500' : 'text-gray-300'
-                        }`}>{sim.desc}</p>
+                        <h3 className={`font-bold text-sm mb-1 transition-colors ${sim.live ? 'text-gray-900 group-hover:text-indigo-700' : 'text-gray-400'
+                          }`}>{sim.title}</h3>
+                        <p className={`text-xs leading-relaxed ${sim.live ? 'text-gray-500' : 'text-gray-300'
+                          }`}>{sim.desc}</p>
                         {sim.live && (
                           <div className="mt-3 flex items-center gap-1 text-xs font-semibold text-indigo-600
                                         opacity-0 group-hover:opacity-100 transition-all duration-200">
@@ -1011,9 +1003,8 @@ export default function LandingPage() {
                   <div className="relative">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-2xl">{c.icon}</span>
-                      <span className={`text-[9px] font-bold uppercase tracking-widest ${
-                        c.sub === 'Physics' ? 'text-blue-400' : 'text-emerald-400'
-                      }`}>{c.sub}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest ${c.sub === 'Physics' ? 'text-blue-400' : 'text-emerald-400'
+                        }`}>{c.sub}</span>
                     </div>
                     <h3 className="font-bold text-white text-sm mb-1">{c.ch}</h3>
                     <div className="flex items-center gap-2 mt-2">

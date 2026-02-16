@@ -4,7 +4,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../components/ui/accordion";
+} from "../ui/accordion";
 
 export function ParsingSteps({ steps, isAnimating }) {
   const getStatusIcon = (status) => {

@@ -1,4 +1,4 @@
-import { parseIUPACName } from "../lib/iupacParser";
+
 
 export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom = 100 }) {
   const scale = zoom / 100;
@@ -14,7 +14,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
   }
 
   const { carbonAtoms, substituents, functionalGroup, parentCarbonCount } = molecule;
-  
+
   // Calculate SVG dimensions - tighter for mobile while still readable
   const spacing = 120;
   const startX = 120;
@@ -52,18 +52,18 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
   const renderHydrogens = (atom, x, y, index) => {
     const hydrogens = [];
     const hCount = atom.hydrogenCount;
-    
+
     if (hCount <= 0) return hydrogens;
-    
+
     const isFirstCarbon = index === 0;
     const isLastCarbon = index === carbonAtoms.length - 1;
     const hasSubstituentsUp = atom.bondsUp > 0;
     const hasSubstituentsDown = atom.bondsDown > 0;
     const hasFuncGroup = atom.functionalGroup && atom.functionalGroup.type !== 'none';
-    
+
     // Track which positions we've used for hydrogens
     let placedCount = 0;
-    
+
     // Position 1: Left (only for first carbon in chain)
     if (isFirstCarbon && placedCount < hCount) {
       hydrogens.push(
@@ -74,7 +74,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 2: Right (only for last carbon in chain)
     if (isLastCarbon && placedCount < hCount) {
       hydrogens.push(
@@ -85,7 +85,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 3: Top (if no substituents up and no functional group)
     if (!hasSubstituentsUp && !hasFuncGroup && placedCount < hCount) {
       hydrogens.push(
@@ -96,7 +96,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 4: Bottom (if no substituents down)
     if (!hasSubstituentsDown && placedCount < hCount) {
       hydrogens.push(
@@ -107,7 +107,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 5: Top-left diagonal (if still need more H)
     if (placedCount < hCount && !hasSubstituentsUp) {
       hydrogens.push(
@@ -118,7 +118,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 6: Top-right diagonal
     if (placedCount < hCount && !hasSubstituentsUp && !hasFuncGroup) {
       hydrogens.push(
@@ -129,7 +129,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 7: Bottom-left diagonal
     if (placedCount < hCount && !hasSubstituentsDown) {
       hydrogens.push(
@@ -140,7 +140,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     // Position 8: Bottom-right diagonal
     if (placedCount < hCount && !hasSubstituentsDown) {
       hydrogens.push(
@@ -151,15 +151,15 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       );
       placedCount++;
     }
-    
+
     return hydrogens;
   };
 
   // Render substituent branches
   const renderSubstituent = (
-    carbonX, 
-    carbonY, 
-    sub, 
+    carbonX,
+    carbonY,
+    sub,
     subIndex,
     totalAtPosition,
     carbonIndex
@@ -167,16 +167,16 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
     // Alternate substituents up and down
     const goUp = subIndex % 2 === 0;
     const baseAngle = goUp ? -90 : 90; // -90 = straight up, 90 = straight down
-    
+
     // Offset for multiple substituents at same position
     const offset = totalAtPosition > 1 ? (subIndex - (totalAtPosition - 1) / 2) * 25 : 0;
-    
+
     const radians = (baseAngle * Math.PI) / 180;
     const branchLength = 45;
-    
+
     const endX = carbonX + offset;
     const endY = carbonY + (goUp ? -branchLength : branchLength);
-    
+
     return (
       <g key={`sub-${carbonIndex}-${subIndex}`}>
         <line
@@ -206,13 +206,13 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
   const getCondensedGroup = (atom, index) => {
     const hCount = atom.hydrogenCount;
     const funcGroup = atom.functionalGroup;
-    
+
     let group = 'C';
     if (hCount === 3) group = 'CH₃';
     else if (hCount === 2) group = 'CH₂';
     else if (hCount === 1) group = 'CH';
     else group = 'C';
-    
+
     // Add functional group (but NOT substituents - those are shown as branches)
     if (funcGroup && funcGroup.type !== 'none' && funcGroup.type !== 'alkene' && funcGroup.type !== 'alkyne') {
       if (funcGroup.type === 'alcohol') group += '(OH)';
@@ -220,7 +220,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       else if (funcGroup.type === 'carboxylic-acid') group = 'COOH';
       else if (funcGroup.type === 'aldehyde') group = 'CHO';
     }
-    
+
     return group;
   };
 
@@ -245,7 +245,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
   // Render condensed format
   if (mode === 'structural' && subType === 'condensed') {
     return (
-      <svg 
+      <svg
         viewBox={`0 0 ${condensedWidth} ${condensedHeight}`}
         width={condensedWidth * scale}
         height={condensedHeight * scale}
@@ -253,7 +253,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
         className="block max-w-none shrink-0"
       >
         <rect width={condensedWidth} height={condensedHeight} fill="transparent" />
-        
+
         {/* Title */}
         <text
           x={condensedWidth / 2}
@@ -264,7 +264,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
         >
           {molecule.name}
         </text>
-        
+
         {/* Condensed formula with branches */}
         {carbonAtoms.map((atom, index) => {
           const x = 70 + index * condensedSpacing;
@@ -272,13 +272,13 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
           const group = getCondensedGroup(atom, index);
           const isLast = index === carbonAtoms.length - 1;
           const hasSubs = atom.substituents.length > 0;
-          
+
           // Check for double/triple bonds
-          const hasDoubleBond = functionalGroup.type === 'alkene' && 
+          const hasDoubleBond = functionalGroup.type === 'alkene' &&
             (functionalGroup.position === index + 1 || functionalGroup.position === index + 2);
-          const hasTripleBond = functionalGroup.type === 'alkyne' && 
+          const hasTripleBond = functionalGroup.type === 'alkyne' &&
             (functionalGroup.position === index + 1 || functionalGroup.position === index + 2);
-          
+
           return (
             <g key={`condensed-${index}`}>
               {/* Substituent branches - alternating UP and DOWN */}
@@ -288,10 +288,10 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                 const goesUp = subIdx % 2 === 0;
                 const branchY = goesUp ? y - 45 : y + 45;
                 // Offset multiple substituents horizontally if more than 2
-                const offsetX = atom.substituents.length > 2 
-                  ? (Math.floor(subIdx / 2) - (Math.floor((atom.substituents.length - 1) / 2) / 2)) * 30 
+                const offsetX = atom.substituents.length > 2
+                  ? (Math.floor(subIdx / 2) - (Math.floor((atom.substituents.length - 1) / 2) / 2)) * 30
                   : 0;
-                
+
                 return (
                   <g key={`sub-${index}-${subIdx}`}>
                     {/* Vertical line from main chain to substituent */}
@@ -316,7 +316,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   </g>
                 );
               })}
-              
+
               {/* Main chain group label */}
               <text
                 x={x}
@@ -327,7 +327,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
               >
                 {group}
               </text>
-              
+
               {/* Bond to next carbon */}
               {!isLast && (
                 <text
@@ -340,7 +340,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   {hasTripleBond ? '≡' : hasDoubleBond ? '=' : '−'}
                 </text>
               )}
-              
+
               {/* Position number below */}
               <text
                 x={x}
@@ -353,7 +353,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
             </g>
           );
         })}
-        
+
         {/* Formula at bottom */}
         <text
           x={condensedWidth / 2}
@@ -368,7 +368,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
   }
 
   return (
-    <svg 
+    <svg
       viewBox={`0 0 ${width} ${height}`}
       width={width * scale}
       height={height * scale}
@@ -377,7 +377,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
     >
       {/* Background */}
       <rect width={width} height={height} fill="transparent" />
-      
+
       {/* Title */}
       <text
         x={width / 2}
@@ -388,19 +388,19 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       >
         {molecule.name}
       </text>
-      
+
       {/* Draw main chain bonds */}
       {carbonAtoms.map((atom, index) => {
         if (index < carbonAtoms.length - 1) {
           const x1 = startX + index * spacing;
           const x2 = startX + (index + 1) * spacing;
-          
+
           // Check for double/triple bonds
-          const hasDoubleBond = functionalGroup.type === 'alkene' && 
+          const hasDoubleBond = functionalGroup.type === 'alkene' &&
             (functionalGroup.position === index + 1 || functionalGroup.position === index + 2);
-          const hasTripleBond = functionalGroup.type === 'alkyne' && 
+          const hasTripleBond = functionalGroup.type === 'alkyne' &&
             (functionalGroup.position === index + 1 || functionalGroup.position === index + 2);
-          
+
           return (
             <g key={`bond-${index}`}>
               <line
@@ -451,8 +451,8 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
       {carbonAtoms.map((atom, index) => {
         const carbonX = startX + index * spacing;
         const subsAtPos = atom.substituents;
-        
-        return subsAtPos.map((sub, subIndex) => 
+
+        return subsAtPos.map((sub, subIndex) =>
           renderSubstituent(carbonX, startY, sub, subIndex, subsAtPos.length, index)
         );
       })}
@@ -462,7 +462,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
         const x = startX + index * spacing;
         const y = startY;
         const funcGroup = atom.functionalGroup;
-        
+
         if (mode === 'bondline') {
           // Bond-line: Only show functional groups and endpoints
           return (
@@ -480,13 +480,13 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
             </g>
           );
         }
-        
+
         if (mode === 'structural') {
           // Condensed format: CH3 - CH2 - CH2 - etc.
           if (subType === 'condensed') {
             return null; // Rendered separately above
           }
-          
+
           // Expanded format (original)
           return (
             <g key={`carbon-${index}`}>
@@ -500,7 +500,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
               >
                 C
               </text>
-              
+
               {/* Position number */}
               <text
                 x={x}
@@ -510,10 +510,10 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
               >
                 C{index + 1}
               </text>
-              
+
               {/* Hydrogen atoms */}
               {renderHydrogens(atom, x, y, index)}
-              
+
               {/* Functional group - expanded form */}
               {funcGroup && funcGroup.type !== 'none' && funcGroup.type !== 'alkene' && funcGroup.type !== 'alkyne' && (
                 <g>
@@ -579,7 +579,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
             </g>
           );
         }
-        
+
         if (mode === 'lewis') {
           return (
             <g key={`carbon-${index}`}>
@@ -593,7 +593,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
               >
                 C
               </text>
-              
+
               {/* Electron pairs for C-C bonds */}
               {index > 0 && (
                 <>
@@ -601,14 +601,14 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   <circle cx={x - 26} cy={y + 2} r={2} fill="#059669" />
                 </>
               )}
-              
+
               {index < carbonAtoms.length - 1 && (
                 <>
                   <circle cx={x + 26} cy={y - 2} r={2} fill="#059669" />
                   <circle cx={x + 26} cy={y + 2} r={2} fill="#059669" />
                 </>
               )}
-              
+
               {/* Hydrogen atoms with electron pairs - render based on actual hydrogenCount */}
               {(() => {
                 const hydrogens = [];
@@ -619,7 +619,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                 const hasSubUp = atom.bondsUp > 0;
                 const hasSubDown = atom.bondsDown > 0;
                 const hasFuncGroup = atom.functionalGroup && atom.functionalGroup.type !== 'none';
-                
+
                 // Position 1: Left (only for first carbon)
                 if (isFirst && placed < hCount) {
                   hydrogens.push(
@@ -632,7 +632,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 // Position 2: Right (only for last carbon)
                 if (isLast && placed < hCount) {
                   hydrogens.push(
@@ -645,7 +645,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 // Position 3: Top (if no substituent up and no functional group)
                 if (!hasSubUp && !hasFuncGroup && placed < hCount) {
                   hydrogens.push(
@@ -658,7 +658,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 // Position 4: Bottom (if no substituent down)
                 if (!hasSubDown && placed < hCount) {
                   hydrogens.push(
@@ -671,7 +671,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 // Position 5: Top-left diagonal
                 if (!hasSubUp && placed < hCount) {
                   hydrogens.push(
@@ -684,7 +684,7 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 // Position 6: Bottom-left diagonal
                 if (!hasSubDown && placed < hCount) {
                   hydrogens.push(
@@ -697,10 +697,10 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
                   );
                   placed++;
                 }
-                
+
                 return hydrogens;
               })()}
-              
+
               {/* Functional group */}
               {funcGroup && funcGroup.type !== 'none' && funcGroup.type !== 'alkene' && funcGroup.type !== 'alkyne' && (
                 <g>
@@ -718,10 +718,10 @@ export function IUPACVisualization({ molecule, mode, subType = 'expanded', zoom 
             </g>
           );
         }
-        
+
         return null;
       })}
-      
+
       {/* Formula at bottom */}
       <text
         x={width / 2}

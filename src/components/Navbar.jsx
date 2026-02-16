@@ -20,7 +20,7 @@ const simulatorCategories = [
     name: 'Chemistry',
     icon: '🧪',
     items: [
-      { name: 'Molecular Viewer', path: '/simulators/molecular-viewer', icon: '🧬', ready: false },
+      { name: 'Molecular Viewer', path: '/simulators/molecular-viewer', icon: '🧬', ready: true },
       { name: 'Periodic Table', path: '/simulators/periodic-table', icon: '📊', ready: false },
       { name: 'Chemical Bonding', path: '/simulators/bonding', icon: '🔗', ready: false },
       { name: 'Gas Laws', path: '/simulators/gas-laws', icon: '💨', ready: false },
@@ -49,8 +49,8 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-          ? 'bg-white/80 backdrop-blur-xl shadow-lg shadow-indigo-500/5 border-b border-indigo-100/50'
-          : 'bg-transparent'
+        ? 'bg-white/80 backdrop-blur-xl shadow-lg shadow-indigo-500/5 border-b border-indigo-100/50'
+        : 'bg-transparent'
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -124,8 +124,8 @@ export default function Navbar() {
                         key={item.path}
                         to={item.ready ? item.path : '#'}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${item.ready
-                            ? 'hover:bg-indigo-50 cursor-pointer group'
-                            : 'opacity-50 cursor-not-allowed'
+                          ? 'hover:bg-indigo-50 cursor-pointer group'
+                          : 'opacity-50 cursor-not-allowed'
                           }`}
                         onClick={(e) => !item.ready && e.preventDefault()}
                       >
@@ -231,12 +231,12 @@ function NavLink({ to, children, scrolled, active }) {
     <Link
       to={to}
       className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${active
-          ? scrolled
-            ? 'text-indigo-700 bg-indigo-50'
-            : 'text-white bg-white/15'
-          : scrolled
-            ? 'text-gray-700 hover:text-indigo-700 hover:bg-indigo-50'
-            : 'text-white/90 hover:text-white hover:bg-white/10'
+        ? scrolled
+          ? 'text-indigo-700 bg-indigo-50'
+          : 'text-white bg-white/15'
+        : scrolled
+          ? 'text-gray-700 hover:text-indigo-700 hover:bg-indigo-50'
+          : 'text-white/90 hover:text-white hover:bg-white/10'
         }`}
     >
       {children}
@@ -250,10 +250,10 @@ function MobileNavLink({ to, children, active, disabled, onClick }) {
       to={to}
       onClick={onClick}
       className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${disabled
-          ? 'text-gray-400 cursor-not-allowed'
-          : active
-            ? 'text-indigo-700 bg-indigo-50'
-            : 'text-gray-700 hover:bg-gray-50'
+        ? 'text-gray-400 cursor-not-allowed'
+        : active
+          ? 'text-indigo-700 bg-indigo-50'
+          : 'text-gray-700 hover:bg-gray-50'
         }`}
     >
       {children}

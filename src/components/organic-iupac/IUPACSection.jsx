@@ -3,12 +3,12 @@ import { Beaker, Eye, List, Info, ZoomIn, ZoomOut } from "lucide-react";
 import { IUPACInput } from "./IUPACInput";
 import { ParsingSteps } from "./ParsingSteps";
 import { IUPACVisualization } from "./IUPACVisualization";
-import { parseIUPACName } from "../lib/iupacParser";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
-import { Slider } from "../components/ui/slider";
-import { Button } from "../components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group";
+import { parseIUPACName } from "../../lib/organic-iupac/iupacParser";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Slider } from "../ui/slider";
+import { Button } from "../ui/button";
+import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
 
 export function IUPACSection() {
   const [parsedMolecule, setParsedMolecule] = useState(null);
@@ -21,7 +21,7 @@ export function IUPACSection() {
     setIsAnimating(true);
     const result = parseIUPACName(name);
     setParsedMolecule(result);
-    
+
     setTimeout(() => setIsAnimating(false), 1000);
   };
 

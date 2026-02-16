@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { FlaskConical, Play, RotateCcw } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { IUPAC_EXAMPLES } from "../lib/iupacParser";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { IUPAC_EXAMPLES } from "../../lib/organic-iupac/iupacParser";
 
 export function IUPACInput({ onParse, isLoading }) {
   const [inputValue, setInputValue] = useState("");
@@ -35,7 +35,7 @@ export function IUPACInput({ onParse, isLoading }) {
             className="pl-11 h-12 text-base bg-background border-organic/30 focus:border-organic focus:ring-organic/30"
           />
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             type="submit"

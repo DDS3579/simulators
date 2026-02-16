@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import ProjectileMotion from './pages/ProjectileMotion';
+import MolecularViewer from './pages/MolecularViewer';
 import About from './pages/About';
 
 // Newton's Laws pages
@@ -59,6 +60,14 @@ export default function App() {
           element={
             <SimulatorLayout>
               <ProjectileMotion />
+            </SimulatorLayout>
+          }
+        />
+        <Route
+          path="/simulators/molecular-viewer"
+          element={
+            <SimulatorLayout>
+              <MolecularViewer />
             </SimulatorLayout>
           }
         />
